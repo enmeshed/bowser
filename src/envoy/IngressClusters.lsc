@@ -1,0 +1,42 @@
+clustersForService(env, svc, prov, types, basePort) ->
+  { Cluster } = types
+  clusterName = `cluster_env_${env.name}_service_${svc.name}`
+
+  [Cluster.fromObject! {
+    name: clusterName
+    connect_timeout: { seconds: 1 }
+    type: 'STRICT_DNS'
+    dns_lookup_family: 'V4_ONLY'
+    lb_policy: 'ROUND_ROBIN'
+    load_assignment: {
+      cluster_name: clusterName
+      endpoints: [{
+        lb_endpoints: [{
+          endpoint: {
+            address: {
+              socket_address: {
+                address: prov.dns
+                port_value: basePort
+              }
+            }
+          }
+        }]
+      }]
+    }
+  }]
+
+clustersForEnvironment(env, types, basePort) ->
+  // Determine all services in the current environment that are routable
+  // via cluster dns to mesh_node providers.
+  [...for elem svcName in env.getServiceNames():
+    svc = env.getService(svcName)
+    prov = svc.getProvider()
+    if (svc.type == 'http_mesh') and (prov?.type == 'mesh_node') and (prov?.dns): clustersForService(env, svc, prov, types, basePort)
+  ]
+
+// Ingress proxy may need to reach all clusters in all environments.
+export clustersForDomain(dom, types, basePort) ->
+  [...for elem name in dom.getEnvironmentNames():
+    env = dom.getEnvironment(name)
+    clustersForEnvironment(env, types, basePort)
+  ]

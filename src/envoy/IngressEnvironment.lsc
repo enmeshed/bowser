@@ -1,6 +1,8 @@
 import { EnvironmentController } from './Environment'
 import { FileWatcher } from '@enmeshed/mesh-reflection-file-watcher'
 
+import { clustersForDomain } from './IngressClusters'
+
 // XXX: Implement at-rest encryption for secrets
 decrypt(x) -> x
 
@@ -12,6 +14,10 @@ export class IngressEnvironmentController extends EnvironmentController:
   start() ->
     this.watcher = new FileWatcher(this.watchFile, this.changed)
     this.watcher.start()
+    // Watch cluster and populate all providers of relevant services
+    // as Envoy clusters
+    { domain } = this.envoyController
+    domain.on("globalChange", this.changed)
 
   stop() ->
     this.watcher.stop()
@@ -19,12 +25,13 @@ export class IngressEnvironmentController extends EnvironmentController:
   changed() =>
     data = JSON.parse(this.watcher.readSync())
 
-    { types } = this.envoyController
+    { types, INGRESS_PROXY_PORT: basePort } = this.envoyController
     { Cluster, RouteConfiguration, Listener, Secret } = types
 
     rsrc = [
       ...for elem x in (data.clusters or []):
         [Cluster.fromObject(x)]
+      ...clustersForDomain(this.envoyController.domain, types, basePort)
       ...for elem x in (data.listeners or []):
         [Listener.fromObject(x)]
       ...for elem x in (data.routes or []):

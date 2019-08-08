@@ -1,10 +1,13 @@
-import { EnvironmentController } from './Environment'
+import { EnvironmentWatcher } from '@enmeshed/mesh-reflection'
 
+import { EnvironmentController } from './Environment'
 import { populateIngressResources } from './SidecarIngress'
 import { populateEgressResources } from './SidecarEgress'
 
+debug = require('debug')('bowser')
+
 export class SidecarEnvironmentController extends EnvironmentController:
-  populate(): void ->
+  populate(): void =>
     { envName, provName, env: envoyEnv } = this
     { domain, types, INGRESS_PROXY_PORT, EGRESS_PROXY_PORT, HOST_BASE_PORT } = this.envoyController
 
@@ -12,18 +15,30 @@ export class SidecarEnvironmentController extends EnvironmentController:
 
     env = domain.getEnvironment(envName)
     if not env:
-      throw new Error(`populateSidecarEnvironment: environment ${envName} not found`)
+      debug('populateSidecarEnvironment: environment', envName, 'not found, serving empty resources')
+      envoyEnv.set(resources)
+      return
 
+    // Serve egress resources from the given env
+    populateEgressResources(resources, env, types, INGRESS_PROXY_PORT, EGRESS_PROXY_PORT)
+
+    // If we are a provider, also serve ingress resources
     prov = env.getProvider(provName)
     if provName and (not prov):
-      throw new Error(`populateSidecarEnvironment: provider ${provName} not found`)
+      debug('populateSidecarEnvironment: provider', provName, 'not found, serving egress-only resources')
+      envoyEnv.set(resources)
+      return
 
-    // Generate all Envoy resources
+    // Generate Ingress resources for services on this node
     populateIngressResources(resources, prov, types, INGRESS_PROXY_PORT, HOST_BASE_PORT)
-    populateEgressResources(resources, env, types, INGRESS_PROXY_PORT, EGRESS_PROXY_PORT)
     envoyEnv.set(resources)
 
   start(envName, provName) ->
     this.envName = envName
     this.provName = provName
-    this.populate()
+
+    this.watcher = new EnvironmentWatcher(this.envoyController.domain, envName, this.populate)
+    this.watcher.start()
+
+  stop() ->
+    this.watcher.stop()
