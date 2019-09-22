@@ -1,8 +1,31 @@
 import { EnvironmentController } from './Environment'
 import { FileWatcher } from '@enmeshed/mesh-reflection-file-watcher'
 
-// XXX: Implement at-rest encryption for secrets
-decrypt(x) -> x
+import fs from 'fs'
+import util from 'util'
+import path from 'path'
+
+debug = require('debug')('bowser:envoy')
+
+readFile = util.promisify(fs.readFile)
+
+loadSslFromFile(data, secretName, basePath): void -/>
+  debug("loading ssl certificate secret", secretName, "from", basePath)
+  pk <- readFile(path.join(basePath, 'private_key'))
+  chain <- readFile(path.join(basePath, 'certificate_chain'))
+  debug("loaded ssl certificate secret", secretName, "from", basePath)
+  if not data.secrets: data.secrets = []
+  data.secrets.push({
+    name: secretName
+    tls_certificate: {
+      certificate_chain: {
+        inline_string: chain
+      }
+      private_key: {
+        inline_string: pk
+      }
+    }
+  })
 
 export class IngressEnvironmentController extends EnvironmentController:
   constructor(envoyController, env, watchFile) ->
@@ -16,8 +39,15 @@ export class IngressEnvironmentController extends EnvironmentController:
   stop() ->
     this.watcher.stop()
 
-  changed() =>
-    data = JSON.parse(this.watcher.readSync())
+  changed() =/>
+    raw <- readFile(this.watchFile)
+    data = JSON.parse(raw)
+
+    // Load any SSL certs that may be stored on disk
+    debug("loading ssl certificate secrets stored on disk")
+    <- [...for elem x in (data.certificateFiles or []):
+      [loadSslFromFile(data, x.name, x.path)]
+    ]
 
     { types } = this.envoyController
     { Cluster, RouteConfiguration, Listener, Secret } = types
@@ -30,7 +60,7 @@ export class IngressEnvironmentController extends EnvironmentController:
       ...for elem x in (data.routes or []):
         [RouteConfiguration.fromObject(x)]
       ...for elem x in (data.secrets or []):
-        [Secret.fromObject(decrypt(x))]
+        [Secret.fromObject(x)]
     ]
 
     this.env.set(rsrc)
