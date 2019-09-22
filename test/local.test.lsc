@@ -25,7 +25,7 @@ it! 'should work', -/>
   svc.bind('TestService', { unary })
   svc.start()
 
-  cli = node.getClientPort('service1')
+  cli <- node.getClientPort('service1')
   iface = cli.clientForProtocol('TestService')
 
   resp <- iface.unary({message: 'test message'})
