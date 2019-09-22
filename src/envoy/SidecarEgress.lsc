@@ -1,11 +1,11 @@
-egressVirtualRouteForService(svc) ->
-  {
+egressVirtualRoutesForService(svc) ->
+  [{
     name: `vroute_service_${svc.name}`
     match: { prefix: `/grpc/${svc.name}/` }
     route: {
       cluster: `cluster_service_${svc.name}`
     }
-  }
+  }]
 
 egressClusterForService(svc, prov, ingressPort) ->
   {
@@ -40,7 +40,7 @@ export populateEgressResources(rsrc, env, types, ingressPort, egressPort): void 
   grpcServices = [...for elem svcName in env.getServiceNames():
     svc = env.getService(svcName)
     prov = svc.getProvider()
-    if (svc.type == 'grpc_mesh') and (prov?.type == 'mesh_node') and (prov.dns): [svc]
+    if (svc.type == 'grpc_mesh') and (prov?.type == 'mesh_node') and (prov?.dns): [svc]
   ]
   if grpcServices.length == 0: return
 
@@ -84,7 +84,7 @@ export populateEgressResources(rsrc, env, types, ingressPort, egressPort): void 
       name: 'vhost_egress'
       domains: ['*']
       routes: [
-        ...for elem svc in grpcServices: [egressVirtualRouteForService(svc)]
+        ...for elem svc in grpcServices: egressVirtualRoutesForService(svc)
       ]
     }]
   }))

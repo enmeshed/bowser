@@ -1,18 +1,18 @@
-ingressVirtualRouteForService(svc, prov) ->
+ingressVirtualRoutesForService(svc, prov) ->
   ord = prov.getServiceOrdinal(svc)
   prefix = if svc.type == 'grpc_mesh':
     `/grpc/${svc.name}/`
   elif svc.type == 'http_mesh':
     `/http/${svc.name}/`
 
-  {
+  [{
     name: `vroute_local_${svc.name}`
     match: { prefix }
     route: {
       cluster: `cluster_local_${ord}`
       prefix_rewrite: '/'
     }
-  }
+  }]
 
 ingressClusterForService(svc, prov, basePort) ->
   ord = prov.getServiceOrdinal(svc)
@@ -93,7 +93,7 @@ export populateIngressResources(rsrc, prov, types, ingressPort, hostBasePort): v
       name: 'vhost_ingress'
       domains: ['*']
       routes: [
-        ...for elem svc in services: [ingressVirtualRouteForService(svc, prov)]
+        ...for elem svc in services: ingressVirtualRoutesForService(svc, prov)
       ]
     }]
   }))
