@@ -25,7 +25,7 @@
   "dependencies": {
     "@enmeshed/mesh-reflection": "^0.2.0",
     "@enmeshed/mesh-reflection-file-watcher": "^0.1.4",
-    "@enmeshed/node-control-plane": "^0.1.8",
+    "@enmeshed/node-control-plane": "^0.1.14",
     "debug": "^4.1.1"
   },
   "devDependencies": {

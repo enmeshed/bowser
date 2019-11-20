@@ -57,6 +57,9 @@ export populateEgressResources(rsrc, env, types, ingressPort, egressPort): void 
       filters: [{
         name: 'envoy.http_connection_manager'
         config: {
+          tracing: {
+            operation_name: "EGRESS"
+          }
           // XXX
           access_log: [{
             name: "envoy.file_access_log"
