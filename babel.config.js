@@ -5,8 +5,7 @@ module.exports = {
       {
         "env": {
           "targets": { "node": 10 }
-        },
-        "stdlib": false
+        }
       }
     ]
   ]
