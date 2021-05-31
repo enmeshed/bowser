@@ -23,10 +23,10 @@
     "lint:fix": "eslint --fix --ext .js,.lsc src"
   },
   "dependencies": {
-    "@enmeshed/mesh-reflection": "^0.2.3",
-    "@enmeshed/mesh-reflection-file-watcher": "^0.2.2",
-    "@enmeshed/node-control-plane": "^0.2.7",
-    "debug": "^4.1.1"
+    "@enmeshed/mesh-reflection": "^0.2.4",
+    "@enmeshed/mesh-reflection-file-watcher": "^0.2.3",
+    "@enmeshed/node-control-plane": "^0.2.9",
+    "debug": "^4.3.1"
   },
   "devDependencies": {
     "express": "^4.17.1",
