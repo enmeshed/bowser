@@ -1,12 +1,13 @@
-import { EnvironmentController } from './Environment'
-import { FileWatcher } from '@enmeshed/mesh-reflection-file-watcher'
-import { clustersForDomain } from './IngressClusters'
-
 import fs from 'fs'
 import util from 'util'
 import path from 'path'
 
-debug = require('debug')('bowser:envoy')
+import { EnvironmentController } from './Environment'
+import { FileWatcher } from '@enmeshed/mesh-reflection-file-watcher'
+import { clustersForDomain } from './IngressClusters'
+
+yaml = require('js-yaml')
+debug = require('debug')('bowser:envoy:ingress')
 
 readFile = util.promisify(fs.readFile)
 
@@ -45,8 +46,12 @@ export class IngressEnvironmentController extends EnvironmentController:
     this.watcher.stop()
 
   changed() =/>
+    debug("reading config")
     raw <- readFile(this.watchFile)
-    data = JSON.parse(raw)
+    data = if (/\.yaml$/.test(this.watchFile)):
+      yaml.load(raw, { filename: this.watchFile })
+    else:
+      JSON.parse(raw)
 
     // Load any SSL certs that may be stored on disk
     debug("loading ssl certificate secrets stored on disk")

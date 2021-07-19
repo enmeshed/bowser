@@ -26,7 +26,8 @@
     "@enmeshed/mesh-reflection": "^0.2.4",
     "@enmeshed/mesh-reflection-file-watcher": "^0.2.3",
     "@enmeshed/node-control-plane": "^0.2.9",
-    "debug": "^4.3.1"
+    "debug": "^4.3.1",
+    "js-yaml": "^4.1.0"
   },
   "devDependencies": {
     "express": "^4.17.1",
